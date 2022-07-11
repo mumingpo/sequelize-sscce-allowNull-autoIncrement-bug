@@ -25,17 +25,25 @@ export async function run() {
 
   Foo.init({
     name: DataTypes.TEXT,
+    // allowNull doesn't want to work with autoincrement for non-pk
+    // and throws a SequelizeUniqueConstraintError instead of anything informative
+    // bug may only be present in SQLite: I have not tested it on other dbs.
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    troubleMaker: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Foo',
   });
 
-  // You can use sinon and chai assertions directly in your SSCCE.
-  const spy = sinon.spy();
-  sequelize.afterBulkSync(() => spy());
-  await sequelize.sync({ force: true });
-  expect(spy).to.have.been.called;
-
-  console.log(await Foo.create({ name: 'TS foo' }));
+  await Foo.sync({ force: true });
+  const foo = await Foo.create({});
   expect(await Foo.count()).to.equal(1);
 }
